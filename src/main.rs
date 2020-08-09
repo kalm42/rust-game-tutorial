@@ -54,41 +54,7 @@ fn character_animation_frames(
     frames
 }
 
-fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
-    let video_subsystem = sdl_context.video()?;
-    let _image_context = image::init(InitFlag::PNG | InitFlag::JPG)?;
-
-    let window = video_subsystem
-        .window("game tutorial", 800, 600)
-        .position_centered()
-        .build()
-        .expect("could not initialize video subsystem");
-
-    let mut canvas = window
-        .into_canvas()
-        .build()
-        .expect("could not make a canvas");
-
-    let texture_creator = canvas.texture_creator();
-
-    let mut dispatcher = DispatcherBuilder::new()
-        .with(keyboard::Keyboard, "Keyboard", &[])
-        .with(physics::Physics, "Physics", &[])
-        .with(animator::Animator, "Animator", &[])
-        .build();
-
-    let mut world = World::new();
-    dispatcher.setup(&mut world);
-    renderer::SystemData::setup(&mut world);
-
-    let movement_command: Option<MovementCommand> = None;
-    world.insert(movement_command);
-
-    let textures = [texture_creator.load_texture("assets/bardo.png")?];
-
-    // First texture in the textures array
-    let player_spritesheet = 0;
+fn initialize_player(world: &mut World, player_spritesheet: usize) {
     let player_top_left_frame = Rect::new(0, 0, 26, 36);
 
     let player_animation = MovementAnimation {
@@ -126,6 +92,92 @@ fn main() -> Result<(), String> {
         .with(player_animation.right_frames[0].clone())
         .with(player_animation)
         .build();
+}
+
+fn initialize_enemy(world: &mut World, enemy_spritesheet: usize, position: Point) {
+    let enemy_top_left_frame = Rect::new(0, 0, 32, 36);
+
+    let enemy_animation = MovementAnimation {
+        current_frame: 0,
+        up_frames: character_animation_frames(
+            enemy_spritesheet,
+            enemy_top_left_frame,
+            Direction::Up,
+        ),
+        down_frames: character_animation_frames(
+            enemy_spritesheet,
+            enemy_top_left_frame,
+            Direction::Down,
+        ),
+        left_frames: character_animation_frames(
+            enemy_spritesheet,
+            enemy_top_left_frame,
+            Direction::Left,
+        ),
+        right_frames: character_animation_frames(
+            enemy_spritesheet,
+            enemy_top_left_frame,
+            Direction::Right,
+        ),
+    };
+
+    world
+        .create_entity()
+        .with(Position(position))
+        .with(Velocity {
+            speed: 0,
+            direction: Direction::Right,
+        })
+        .with(enemy_animation.right_frames[0].clone())
+        .with(enemy_animation)
+        .build();
+}
+
+fn main() -> Result<(), String> {
+    let sdl_context = sdl2::init()?;
+    let video_subsystem = sdl_context.video()?;
+    let _image_context = image::init(InitFlag::PNG | InitFlag::JPG)?;
+
+    let window = video_subsystem
+        .window("game tutorial", 800, 600)
+        .position_centered()
+        .build()
+        .expect("could not initialize video subsystem");
+
+    let mut canvas = window
+        .into_canvas()
+        .build()
+        .expect("could not make a canvas");
+
+    let texture_creator = canvas.texture_creator();
+
+    let mut dispatcher = DispatcherBuilder::new()
+        .with(keyboard::Keyboard, "Keyboard", &[])
+        .with(physics::Physics, "Physics", &[])
+        .with(animator::Animator, "Animator", &[])
+        .build();
+
+    let mut world = World::new();
+    dispatcher.setup(&mut world);
+    renderer::SystemData::setup(&mut world);
+
+    let movement_command: Option<MovementCommand> = None;
+    world.insert(movement_command);
+
+    let textures = [
+        texture_creator.load_texture("assets/bardo.png")?,
+        texture_creator.load_texture("assets/reaper.png")?,
+    ];
+
+    // First texture in the textures array
+    let player_spritesheet = 0;
+    let enemy_spritesheet = 1;
+
+    initialize_player(&mut world, player_spritesheet);
+
+    initialize_enemy(&mut world, enemy_spritesheet, Point::new(-150, -150));
+    initialize_enemy(&mut world, enemy_spritesheet, Point::new(150, -190));
+    initialize_enemy(&mut world, enemy_spritesheet, Point::new(-150, 170));
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut i = 0;
