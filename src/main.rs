@@ -1,3 +1,4 @@
+mod ai;
 mod animator;
 mod components;
 mod keyboard;
@@ -123,6 +124,7 @@ fn initialize_enemy(world: &mut World, enemy_spritesheet: usize, position: Point
 
     world
         .create_entity()
+        .with(Enemy)
         .with(Position(position))
         .with(Velocity {
             speed: 0,
@@ -153,8 +155,9 @@ fn main() -> Result<(), String> {
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(keyboard::Keyboard, "Keyboard", &[])
-        .with(physics::Physics, "Physics", &[])
-        .with(animator::Animator, "Animator", &[])
+        .with(ai::AI, "AI", &[])
+        .with(physics::Physics, "Physics", &["Keyboard", "AI"])
+        .with(animator::Animator, "Animator", &["Keyboard", "AI"])
         .build();
 
     let mut world = World::new();
